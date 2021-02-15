@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c51ebb94-da31-4817-8f85-cc0a36705260">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="1.createEmployee" doc:id="cb0b8ad8-b013-4d37-b97f-1cecba5d6109" >
+		<http:listener doc:name="Listener" doc:id="70e6e586-f100-45d1-8ca7-16d9c6064848" config-ref="HTTP_Listener_config" path="/CreateEmployee">
+			<http:response statusCode="201" />
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="cdff6301-4bd9-48d6-8ec8-8ecda46f9997" message="#[payload]"/>
+		<set-payload value="#[payload.employee.first_name ++ ' ' ++ payload.employee.last_name ++ ' was created successfully.(Employee ID:' ++ payload.employee.id ++ ')']" doc:name="Set Payload" doc:id="f41b6f40-8db1-4e56-b4bd-0e4ea7d66043" />
+	</flow>
+	<flow name="2.TriggerFlow" doc:id="36aca8c9-c443-4213-a5eb-d5d4b7850672" >
+		<http:listener doc:name="Listener" doc:id="e8d2a532-f5ef-498d-a652-dbbf00a38748" config-ref="HTTP_Listener_config" path="/triggerFlow">
+			<http:response statusCode="201" />
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="5a7783bd-b82a-4973-87eb-3ffe103e849d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+lookup('1.createEmployee', payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="3.toCamelCase" doc:id="457c3afe-2640-4e80-8835-e2241cf26ded" >
+		<http:listener doc:name="Listener" doc:id="580cb09f-cf4f-4cb7-ae17-f69c19b70ed4" config-ref="HTTP_Listener_config" path="/ConvertCamelCase"/>
+		<logger level="INFO" doc:name="Logger" doc:id="22966bc4-bdef-40de-8036-d5f60bf6b61a" message="#['Received Input Attributes :' ++ attributes.queryParams.camelCaseInputField]"/>
+		<set-variable value="#[attributes.queryParams.camelCaseInputField]" doc:name="Set camelCaseInputField Variable" doc:id="63795a5f-8be1-4181-9d93-25174ef4f524" variableName="camelCaseInputField"/>
+		<ee:transform doc:name="Transform Message" doc:id="60287ca3-fd7f-44d6-b8ae-af44c3f45d4a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	a: java!utils::MyUtils::toCamelCase(vars.camelCaseInputField)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="4.1-JoinInputsFomatBased" doc:id="c570a553-bd90-40df-8056-8a54fe064e55" >
+		<http:listener doc:name="Listener" doc:id="43dc84fb-8ec7-44f9-a05b-935c71bce8a1" config-ref="HTTP_Listener_config" path="/FormatBased"/>
+		<set-payload value='#[{
+   "employee":[
+      {
+         "id":"A007",
+         "first_name":"Jan",
+         "last_name":"Doe"
+      },
+      {
+         "id":"A008",
+         "first_name":"Ron",
+         "last_name":"David"
+      },
+      {
+         "id":"A009",
+         "first_name":"Jane",
+         "last_name":"Kane"
+      },
+      {
+         "id":"A010",
+         "first_name":"Marsh",
+         "last_name":"Megan"
+      },
+      {
+         "id":"A011",
+         "first_name":"Kelly",
+         "last_name":"Mitch"
+      },
+      {
+         "id":"A012",
+         "first_name":"Chris",
+         "last_name":"Vaste"
+      }
+   ]
+}]' doc:name="Input1 JSON" doc:id="f543fc67-76dc-426a-a88f-124883bfe805"/>
+		<set-variable value="#[payload]" doc:name="Save Input1" doc:id="e6482c51-f88a-4155-a103-f1cbdfa15c8d" variableName="input1"/>
+		<set-payload value='#[{
+   "scoreBoard":[
+      {
+         "id":"A007",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            80,
+            75,
+            89,
+            100
+         ]
+      },
+      {
+         "id":"A008",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            70,
+            85,
+            69,
+            90
+         ]
+      },
+      {
+         "id":"A021 ",
+         "subjects ":[
+            "Maths ",
+            "English ",
+            "Arts ",
+            "Drawimgs "
+         ],
+         "score ":[
+            90,
+            87,
+            77,
+            95
+         ]
+      }
+   ]
+}]' doc:name="Input2 JSON" doc:id="b9623330-990f-4138-a773-d7fd9ce76d46"/>
+		<set-variable value="#[payload]" doc:name="save Input2" doc:id="a2d8b349-c435-48b9-9818-95cbe95713a3" variableName="input2"/>
+		<ee:transform doc:name="Transform Message" doc:id="44b8f016-9a07-44ee-999f-6d0227e9f642" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Arrays 
+var employees =  vars.input1.employee 
+var scoreBoards = vars.input2.scoreBoard
+output application/json
+---
+"certificate" :
+ join(employees, scoreBoards, (employee) -> employee.id, (scoreBoard) -> scoreBoard.id) map ((element) -> {
+id: element.l.id,
+firstName:element.l.first_name,
+lastName:element.l.last_name,
+marksBySubjectWise:(element.r.subjects map ((key,index) ->(key ++ ":" ++ element.r.score[index])))
+
+//marksBySubjectWise:zip(element.r.subjects,element.r.score)
+})
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="4.2-JoinInputsAllRecordsInput1" doc:id="86ab4c59-85ae-4cf6-b8c9-3098f1a2e867" >
+		<http:listener doc:name="Listener" doc:id="0b1abba1-ab87-4a2d-92ba-5f42ed1cf676" config-ref="HTTP_Listener_config" path="/JoinInputs"/>
+		<set-payload value='#[{
+   "employee":[
+      {
+         "id":"A007",
+         "first_name":"Jan",
+         "last_name":"Doe"
+      },
+      {
+         "id":"A008",
+         "first_name":"Ron",
+         "last_name":"David"
+      },
+      {
+         "id":"A009",
+         "first_name":"Jane",
+         "last_name":"Kane"
+      },
+      {
+         "id":"A010",
+         "first_name":"Marsh",
+         "last_name":"Megan"
+      },
+      {
+         "id":"A011",
+         "first_name":"Kelly",
+         "last_name":"Mitch"
+      },
+      {
+         "id":"A012",
+         "first_name":"Chris",
+         "last_name":"Vaste"
+      }
+   ]
+}]' doc:name="Input1 JSON" doc:id="11f0eb31-9d24-4e1b-b695-9cb100371ba2"/>
+		<set-variable value="#[payload]" doc:name="Save Input1" doc:id="94ecfb92-00e3-4333-a120-c30becbb1780" variableName="input1"/>
+		<set-payload value='#[{
+   "scoreBoard":[
+      {
+         "id":"A007",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            80,
+            75,
+            89,
+            100
+         ]
+      },
+      {
+         "id":"A008",
+         "subjects":[
+            "Maths",
+            "English",
+            "Arts",
+            "Drawimgs"
+         ],
+         "score":[
+            70,
+            85,
+            69,
+            90
+         ]
+      },
+      {
+         "id":"A021 ",
+         "subjects":[
+            "Maths ",
+            "English ",
+            "Arts ",
+            "Drawimgs "
+         ],
+         "score":[
+            90,
+            87,
+            77,
+            95
+         ]
+      }
+   ]
+}]' doc:name="Input2 JSON" doc:id="6d2e5f66-3362-42d2-a600-e35482f93e88"/>
+		<set-variable value="#[payload]" doc:name="save Input2" doc:id="451042bd-7186-4a64-8290-20f7d1c12e3f" variableName="input2"/>
+		<ee:transform doc:name="Transform Message" doc:id="150d1ce8-1de4-46de-a2e7-f1ab9b81005c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Arrays 
+var employees =  vars.input1.employee 
+var scoreBoards = vars.input2.scoreBoard
+output application/json
+---
+"certificate" :
+outerJoin(employees, scoreBoards, (employee) -> employee.id, (scoreBoard) -> scoreBoard.id) map ((element) -> {
+id: element.l.id default element.r.id ,
+firstName:element.l.first_name default '',
+lastName:element.l.last_name default '',
+
+marksBySubjectWise:(element.r.subjects map ((key,index) ->(key ++ ":" ++ element.r.score[index])))
+
+
+})
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="5.NaturalNumber" doc:id="d62003a2-cd48-4438-a4c8-6620bd4c4f8a" >
+		<http:listener doc:name="Listener" doc:id="4559cc36-ea21-426b-bde5-36ad557e3d8d" config-ref="HTTP_Listener_config" path="/NumberSequence/{n}"/>
+		<set-variable value="#[attributes.uriParams.n]" doc:name="Set input N" doc:id="fe0e0f6d-743e-47b9-83b0-492957263ac5" variableName="inputNumber"/>
+		<set-variable value='#["[" ++ 1]' doc:name="Set Variable" doc:id="4010371e-1911-4d3e-8d00-92701c83d08a" variableName="i" />
+		<foreach doc:name="For Each" doc:id="80fd4dfb-10c2-407c-bd0f-7047ffeb666f" collection="#[1 to vars.inputNumber-1]">
+			<set-variable value='#[vars.i ++ "," ++ (vars.counter+1)]' doc:name="Set Variable" doc:id="4a6b73c9-fda0-47d3-ae8d-f5f1356017c8" variableName="i"/>
+		</foreach>
+		<set-payload doc:name="Set Payload" doc:id="64632c70-3f38-4b35-b22e-85df00a964fc" value='#[vars.i ++ "]"]' />
+	</flow>
+</mule>
